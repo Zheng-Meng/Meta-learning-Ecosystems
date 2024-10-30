@@ -23,7 +23,7 @@ def plot_and_save(system, t_all, ts, params, plot_length=1000):
     ax[1].set_ylabel('y')
     ax[2].set_ylabel('z')
     
-    plt.savefig('./demonstration/{}_time_series.png'.format(system))
+    # plt.savefig('./demonstration/{}_time_series.png'.format(system))
     plt.show()
     
     plot_length = 500
@@ -37,7 +37,7 @@ def plot_and_save(system, t_all, ts, params, plot_length=1000):
     ax[1].set_ylabel('y')
     ax[2].set_ylabel('z')
     
-    plt.savefig('./demonstration/{}_time_series.png'.format(system))
+    # plt.savefig('./demonstration/{}_time_series.png'.format(system))
     plt.show()
     
     ax = plt.figure().add_subplot(projection='3d')
@@ -47,7 +47,7 @@ def plot_and_save(system, t_all, ts, params, plot_length=1000):
     # plt.savefig('./demonstration/{}_3d.png'.format(system))
     plt.show()
     
-    pkl_file = open('./data_old/' + 'data_{}'.format(system) + '.pkl', 'wb')
+    pkl_file = open('./data/' + 'data_{}'.format(system) + '.pkl', 'wb')
     pickle.dump(ts, pkl_file)
     pickle.dump(params, pkl_file)
     pkl_file.close()
@@ -263,55 +263,6 @@ def generate_bouali(scale=2, plot_length=1000, data_length=5000):
     
     plot_and_save(system, t_all, ts, params, plot_length=plot_length)
     
-    
-    
-#################### generate lorenz96
-# dt = 0.01
-# t_end = 5000
-# t_all = np.arange(0, t_end, dt)
-# N = 40
-# F = 8
-# x0 = np.random.rand(N)
-
-# params = {'N': N, 'F': F}
-
-# ts = rk4(func_lorenz96, x0, t_all, params=np.array([F]))
-
-# pkl_file = open('./data/' + 'data_lorenz96' + '.pkl', 'wb')
-# pickle.dump(ts, pkl_file)
-# pickle.dump(params, pkl_file)
-# pkl_file.close()
-
-
-
-################### generate mackeyglass
-# dt = 0.01
-# t_end = 300000
-# t_all = np.arange(0, t_end, dt)
-# x0 = [1.0 + np.random.rand()]
-
-# ts = rk4_delay(func_mackeyglass, x0, t_all, params=np.array([30]))
-
-# ts = ts[::100]
-# ts = ts[400:]
-
-# fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-# ax.plot(ts_norm[:, 0])
-
-# pkl_file = open('./data/' + 'data_mg30' + '.pkl', 'wb')
-# pickle.dump(ts_norm, pkl_file)
-# pkl_file.close()
-
-# pkl_file = open('./data/' + 'data_mg17' + '.pkl', 'rb')
-# data1 = pickle.load(pkl_file)
-# data2 = pickle.load(pkl_file)
-# pkl_file.close()
-
-
-
-# scaler = MinMaxScaler()
-# ts_norm = scaler.fit_transform(ts)
-
 
 if __name__ == '__main__':
     print('save_chaos')
