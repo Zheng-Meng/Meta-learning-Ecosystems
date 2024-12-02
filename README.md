@@ -12,7 +12,7 @@ Leveraging synthetic data from paradigmatic nonlinear but non-ecological dynamic
 
 Download the time series data of all chaotic systems from [Zenodo](https://zenodo.org/records/14261464) and move them to the 'data' folder. You can also generate the chaotic data by running `save_chaos.py` required for the machine learning code that follows. To proceed with the machine learning code, either download the data and move it to the 'data' folder or generate the data yourself.
 
-Run `reptile_main.py` to train the model and evaluate it on target ecological systems. An example of predicting chaotic foodchain system is shown below: 
+Run `reptile_main.py` to train the model and evaluate it on target ecological systems. An example of predicting chaotic foodchain system by meta learning is shown below: 
 
 <p align="center">
 <img src='images/foodchain_prediction.png' width='600'>
