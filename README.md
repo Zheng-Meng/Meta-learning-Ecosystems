@@ -1,7 +1,7 @@
 <h1 align="center">Learning to learn ecosystems from limited data</h1>
 
 <p align="center">
-<img src='images/meta_learning1.png' width='600'>
+<img src='images/meta_learning1.png' width='700'>
 </p>
 
 Paper entitled ''Learning to learn ecosystems from limited data'', submitted to PNAS, under review. You can find it from [ArXiv](https://arxiv.org/abs/2410.07368).
@@ -27,6 +27,11 @@ Run `compare_real.py` to simulate and compare the performance of the meta-learni
 </p>
 
 The MSE for one- to four-step predeictions are [0.00062, 0.0014, 0.0025, 0.0039] and [0.00040, 0.0009, 0.0017, 0.0027] for the FNN and Meta-learning, respectively.
+
+# More information
+
+- For more information about the reservoir hyperparameters optimization, you can find from my [GitHub page](https://github.com/Zheng-Meng/Reservoir-Computing-and-Hyperparameter-Optimization).
+- For another work on unseen systems dynamics reconstruction by machine learning, you can find the information in our [Nature Communications](https://github.com/Zheng-Meng/Dynamics-Reconstruction-ML).
 
 # Cite our work
 ```
