@@ -1,4 +1,4 @@
-<h1 align="center">Learning to learn ecosystems from limited data - a meta-learning approach</h1>
+<h1 align="center">Learning to learn ecosystems from limited data</h1>
 
 <p align="center">
 <img src='images/meta_learning.png' width='600'>
