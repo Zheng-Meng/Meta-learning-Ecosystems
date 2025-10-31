@@ -30,7 +30,7 @@ The MSE for one- to four-step predeictions are [0.00062, 0.0014, 0.0025, 0.0039]
 
 # More information
 
-- For more information about the reservoir hyperparameters optimization, you can find from my [GitHub page](https://github.com/Zheng-Meng/Reservoir-Computing-and-Hyperparameter-Optimization).
+- For more information about the hyperparameters optimization, you can find from my [GitHub page](https://github.com/Zheng-Meng/Reservoir-Computing-and-Hyperparameter-Optimization).
 - For another work on unseen systems dynamics reconstruction by machine learning, you can find the information in our [Nature Communications](https://github.com/Zheng-Meng/Dynamics-Reconstruction-ML).
 
 # Cite our work
