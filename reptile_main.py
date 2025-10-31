@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import json
 from utils import *
 from scipy.spatial.distance import directed_hausdorff
+import pickle
 # Parsing
 parser = argparse.ArgumentParser('Train reptile on chaos')
 parser.add_argument('--logdir', default='logdir', help='Folder to store everything/load')
@@ -26,13 +27,13 @@ parser.add_argument('--logdir', default='logdir', help='Folder to store everythi
 # Training params
 parser.add_argument('--meta-iterations', default=30, type=int, help='number of meta iterations')
 parser.add_argument('--start-meta-iteration', default=0, type=int, help='start iteration')
-parser.add_argument('--iterations', default=10, type=int, help='number of base iterations')
+parser.add_argument('--iterations', default=20, type=int, help='number of base iterations')
 parser.add_argument('--test-iterations', default=10, type=int, help='number of base iterations')
 parser.add_argument('--batch', default=128, type=int, help='minibatch size in base task')
 parser.add_argument('--meta-lr', default=1., type=float, help='meta learning rate')
 parser.add_argument('--lr', default=1e-3, type=float, help='base learning rate')
 parser.add_argument('--validate-every', default=5, type=int, help='Meta-evaluation every ... base-tasks')
-parser.add_argument('--train-length', default=30000, type=int, help='inner training length')
+parser.add_argument('--train-length', default=20000, type=int, help='inner training length')
 parser.add_argument('--test-length', default=51000, type=int, help='testing length')
 parser.add_argument('--train-scale', default=1.0, type=float, help='scale the training length')
 parser.add_argument('--noise-level', default=0.003, type=float, help='add noise to the data')
@@ -65,6 +66,9 @@ attractors = ['aizawa', 'bouali', 'chua', 'dadras', 'foodchain',
 
 attractors_in  = ['aizawa', 'bouali', 'chua', 'sprott_03', 'sprott_14']
 attractors_test = ['foodchain', 'hastings', 'lotka']
+
+# attractors_test = ['hastings']
+# attractors_test = ['lotka']
 
 train_set = attractors_in
 val_set = []
@@ -140,14 +144,11 @@ def validation_process(model, data):
     
     data_train = torch.Tensor(np.array(data_N[:args.train_length, :]))
     target_train = torch.Tensor(np.array(data[args.embedding_time:args.train_length+args.embedding_time, :]))
-    # data_test = torch.Tensor(np.array(data_N[args.train_length:, :]))
-    # target_test = torch.Tensor(np.array(data[args.train_length+args.embedding_time:, :]))
 
     dataset = TensorDataset(data_train, target_train)
     train_loader = DataLoader(dataset, batch_size=args.batch, shuffle=True)
 
     loss_fn = nn.MSELoss()
-    # optimizer = torch.optim.Adam(params=model.parameters(), lr=args.lr)
     
     losses = []
     
@@ -166,44 +167,40 @@ def validation_process(model, data):
     
     return loss_mean, losses
 
-
 def long_term_validation(model, data):
     model.eval()
-    
+
+    clean_data = data.copy()
+
     noise = np.random.normal(loc=0., scale=args.noise_level, size=data.shape)
     data = np.clip(data + noise, 0, 1)
-    
+
     data_N = create_dataset(data, N=args.embedding_time)
-    # data = torch.Tensor(np.array(data))
-    
-    # data_train = torch.Tensor(np.array(data_N[:args.train_length, :]))
-    # target_train = torch.Tensor(np.array(data[args.embedding_time:args.train_length+args.embedding_time, :]))
-    data_test = torch.Tensor(np.array(data_N[:args.test_length, :]))
-    target_test = torch.Tensor(np.array(data[args.embedding_time:args.test_length+args.embedding_time, :]))
-    
-    vali_length = args.test_length - 1000
-    num_steps = vali_length  # the number of steps you want to predict
-    predictions = []
 
-    init_seq = data_test[0, :]
+    data_test   = torch.tensor(np.array(data_N[:args.test_length, :]), dtype=torch.float32)
+    target_test = torch.tensor(
+        np.array(clean_data[args.embedding_time:args.test_length + args.embedding_time, :]),  # use clean targets
+        dtype=torch.float32
+    )
 
-    for i in range(num_steps):
-        data_input_i = init_seq
-        data_input_i = data_input_i.to(device)
-        
-        # We don't need to compute gradients for validation, so wrap in no_grad to save memory
-        with torch.no_grad():
-            output = model(data_input_i)
-        
-        init_seq = torch.cat([init_seq.to(device), output.to(device)], dim=0)
-        init_seq = init_seq[output_size:]
-        
-        # Store the prediction
-        predictions.append(output.detach().cpu().numpy())   # Detach from the computation graph and move to cpu
+    # Align rollout length to target length
+    num_steps = target_test.shape[0]
 
-    predictions = np.array(predictions)
-    
+    # Prepare initial window
+    init_seq = data_test[0, :].to(device)  # shape: (input_size,)
+
+    preds = []
+    with torch.no_grad():
+        for _ in range(num_steps):
+            x = init_seq
+            y = model(x)          
+            preds.append(y.detach().cpu().numpy())
+
+            init_seq = torch.cat([init_seq, y.to(device)], dim=0)[output_size:]
+
+    predictions = np.stack(preds, axis=0)  # shape: (num_steps, 3)
     return target_test.cpu().numpy(), predictions
+
     
 def get_optimizer(model, state=None):
     # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(0, 0.999))
@@ -240,8 +237,7 @@ for meta_iteration in tqdm.trange(args.start_meta_iteration, args.meta_iteration
         train_data, _, name = extract_train_task.get_random_data()
         if name in name_set:
             continue
-        # if args.train_scale < 1.0:
-        #     train_data = train_data[:round(args.train_scale * train_len), :]
+
         print('train task: ', name)
         # Run inner loop
         model_copy, loss = learning_process(model, train_data, optimizer, args.iterations)
@@ -271,22 +267,31 @@ for idx in range(extract_test_task.__len__()):
     optimizer = get_optimizer(model, state=None)
     # Sample a task
     train_data, test_data, name = extract_test_task.get_specific_data(idx=idx)
-    # if args.train_scale < 1.0:
-    #     train_data = train_data[:round(args.train_scale * train_len), :]
-    print('task: ', name)
+    
     # Run inner loop
     model_copy, loss = learning_process(model, train_data, optimizer, args.iterations)
     
     loss_mean, losses = validation_process(model_copy, test_data)
     real, prediction = long_term_validation(model_copy, test_data)
     
+    print(np.shape(real))
+    
     dv = loss_long_term(real, prediction, dt=0.04)
+    
+    print('task: ', name, 'dv: ', dv)
     
     test_losses.append(loss_mean)
     test_dv.append(dv)
     test_names.append(name)
     test_reals.append(real)
     test_predcitions.append(prediction)
+    
+    # if name == 'hastings':
+    #     pkl_file = open('./save_file/' + 'time_series_meta_hastings'+ '.pkl', 'wb')
+    #     pickle.dump(real, pkl_file)
+    #     pickle.dump(prediction, pkl_file)
+    #     pickle.dump(dv, pkl_file)
+    #     pkl_file.close()
 
 
 for idx in range(extract_test_task.__len__()):
@@ -305,11 +310,30 @@ for idx in range(extract_test_task.__len__()):
     ax.set_title(name)
     ax.legend()
     plt.show()
+    
+    fig, ax = plt.subplots(3, 1, figsize=(8,6))
+
+    pred_length = 2000
+    ax[0].plot(prediction[:pred_length,  0], label='pred')
+    ax[0].plot(real[:pred_length, 0], label='real')
+
+    ax[1].plot(prediction[:pred_length, 1], label='pred')
+    ax[1].plot(real[:pred_length, 1], label='real')
+
+    ax[2].plot(prediction[:pred_length, 2], label='pred')
+    ax[2].plot(real[:pred_length, 2], label='real')
+
+    plt.legend()
+    plt.show()
 
 
 
 
-
+# pkl_file = open('./save_file/' + 'time_series_meta'+ '.pkl', 'wb')
+# pickle.dump(real, pkl_file)
+# pickle.dump(prediction, pkl_file)
+# pickle.dump(dv, pkl_file)
+# pkl_file.close()
 
 
 
